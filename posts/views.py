@@ -53,26 +53,38 @@ def profile(request, username):
     page_number = request.GET.get('page') 
     page = paginator.get_page(page_number) 
     return render(request, 'profile.html', {'author': author, 'page': page, 'paginator': paginator})
-    # post_list = Post.objects.all()
-    # paginator = Paginator(post_list, 10)  
-
-    # page_number = request.GET.get('page') 
-    # page = paginator.get_page(page_number) 
-    # return render(
-    #     request,
-    #     'index.html',
-    #     {'page': page, 'paginator': paginator}
-    # )
  
 def post_view(request, username, post_id):
-    return HttpResponse(f"post_view {username}, {post_id}")
+    User = get_user_model()
+    author = get_object_or_404(User, username=username)
 
-        # тут тело функции
-        #return render(request, 'post.html', {})
+    post = get_object_or_404(Post, author=author, id=post_id)
 
+    return render(request, 'post.html', {'author': author, 'post': post})
 
+@login_required
 def post_edit(request, username, post_id):
-    return HttpResponse(f"post_edit {username}, {post_id}")
+    if request.user.username != username:
+        return redirect('login')
+
+    User = get_user_model()
+    user = User.objects.get(username=username)
+    post = Post.objects.get(author=user, id=post_id)
+
+    if request.method == "POST":
+        form = PostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+            return redirect('index')
+    else:
+        form = PostForm(instance=post)
+
+    return render(request, 'new_post.html', {'form': form})
+
+
+    
         # тут тело функции. Не забудьте проверить, 
         # что текущий пользователь — это автор записи.
         # В качестве шаблона страницы редактирования укажите шаблон создания новой записи

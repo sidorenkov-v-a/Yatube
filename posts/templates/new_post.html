@@ -35,8 +35,15 @@
                     {% endfor %}
 
                     <div class="col-md-6 offset-md-4">              
+                            <p>URL of this page: {{ url }}</p>
                             <button type="submit" class="btn btn-primary">
-                                Создать запись
+                                {% if url == posts.views.new_post  %}
+                                    Создать запись
+                                {% elif url == posts.views.post_edit %}
+                                    Редактировать запись
+                                {% else %}
+                                    Ну что еще???
+                                {% endif %}
                             </button>
                     </div>
                 </form>
