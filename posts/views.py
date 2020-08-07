@@ -62,10 +62,9 @@ def post_view(request, username, post_id):
 
     return render(request, 'post.html', {'author': author, 'post': post})
 
-@login_required
 def post_edit(request, username, post_id):
     if request.user.username != username:
-        return redirect('login')
+        return redirect(f'/{username}/{post_id}')
 
     User = get_user_model()
     user = User.objects.get(username=username)
