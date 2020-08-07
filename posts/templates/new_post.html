@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if request.path == '/new/'  %}
+    {% if not post  %}
         Новая запись
     {% else %}
         Редактировать запись
@@ -15,7 +15,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8 p-5">
         <div class="card">
-            {% if request.path == '/new/'  %}
+            {% if not post  %}
                 <div class="card-header">Создайте новую запись</div>            
             {% else %}
                 <div class="card-header">Отредактируйте свою запись</div>
@@ -50,7 +50,7 @@
 
                     <div class="col-md-6 offset-md-4">     
                             <button type="submit" class="btn btn-primary">
-                                {% if request.path == '/new/'  %}
+                                {% if not post %}
                                     Создать запись
                                 {% else %}
                                     Редактировать запись
