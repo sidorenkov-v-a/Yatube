@@ -1,5 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Новая запись{% endblock %}
+
+{% block title %}
+    {% if url.path == 'new_post'  %}
+        Новая запись
+    {% else %}
+        Редактировать запись
+    {% endif %}
+{% endblock %}
+
 {% block content %}
 {# загружаем фильтр #}
 {% load user_filters %}
@@ -7,7 +15,12 @@
 <div class="row justify-content-center">
     <div class="col-md-8 p-5">
         <div class="card">
-            <div class="card-header">Создайте новую запись</div>
+            {% if url.path == 'new_post'  %}
+                <div class="card-header">Создайте новую запись</div>            
+            {% else %}
+                <div class="card-header">Отредактируйте свою запись</div>
+            {% endif %}
+            
             <div class="card-body">
                 
               {% for error in form.errors %}
@@ -15,8 +28,13 @@
                       {{ error|escape }}
                   </div>
                 {% endfor %}
-
-                <form method="post" action="{% url 'new_post' %}">
+                
+                {% if url.path == 'new_post'  %}
+                    <form method="post" action="{% url 'new_post' %}">         
+                {% else %}
+                    <form method="post">  
+                {% endif %}
+                
                     {% csrf_token %}
 
                     {% for field in form %}
@@ -37,12 +55,10 @@
                     <div class="col-md-6 offset-md-4">              
                             <p>URL of this page: {{ url }}</p>
                             <button type="submit" class="btn btn-primary">
-                                {% if url == posts.views.new_post  %}
+                                {% if url.path == 'new_post'  %}
                                     Создать запись
-                                {% elif url == posts.views.post_edit %}
-                                    Редактировать запись
                                 {% else %}
-                                    Ну что еще???
+                                    Редактировать запись
                                 {% endif %}
                             </button>
                     </div>

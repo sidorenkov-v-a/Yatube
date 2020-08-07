@@ -74,9 +74,11 @@ def post_edit(request, username, post_id):
     if request.method == "POST":
         form = PostForm(request.POST)
         if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
+            edited_post = form.save(commit=False)
+            edited_post.author = post.author
+            edited_post.id = post.id
+            edited_post.pub_date = post.pub_date
+            edited_post.save()
             return redirect('index')
     else:
         form = PostForm(instance=post)
