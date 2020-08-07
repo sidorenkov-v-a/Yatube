@@ -7,7 +7,7 @@ urlpatterns = [
     # Просмотр постов группы
     path('group/<slug:slug>/', views.group_posts, name='group'),
     # Создание новой записи
-    path('new_post/', views.new_post, name='new_post'),
+    path('new/', views.new_post, name='new_post'),
     # Профайл пользователя
     path('<str:username>/', views.profile, name='profile'),
     # Просмотр записи

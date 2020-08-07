@@ -27,7 +27,7 @@ def group_posts(request, slug):
     page_number = request.GET.get('page') 
     page = paginator.get_page(page_number)
 
-    return render(request, 'group.html', {'page': page, 'paginator': paginator})
+    return render(request, 'group.html', {'group': group, 'page': page, 'paginator': paginator})
 
 
 @login_required
@@ -78,16 +78,8 @@ def post_edit(request, username, post_id):
             edited_post.id = post.id
             edited_post.pub_date = post.pub_date
             edited_post.save()
-            return redirect('index')
+            return redirect(f'/{username}/{post_id}')
     else:
         form = PostForm(instance=post)
 
     return render(request, 'new_post.html', {'form': form})
-
-
-    
-        # тут тело функции. Не забудьте проверить, 
-        # что текущий пользователь — это автор записи.
-        # В качестве шаблона страницы редактирования укажите шаблон создания новой записи
-        # который вы создали раньше (вы могли назвать шаблон иначе)
-        #return render(request, 'post_new.html', {})

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if request.path == '/new_post/'  %}
+    {% if request.path == '/new/'  %}
         Новая запись
     {% else %}
         Редактировать запись
@@ -15,7 +15,7 @@
 <div class="row justify-content-center">
     <div class="col-md-8 p-5">
         <div class="card">
-            {% if request.path == '/new_post/'  %}
+            {% if request.path == '/new/'  %}
                 <div class="card-header">Создайте новую запись</div>            
             {% else %}
                 <div class="card-header">Отредактируйте свою запись</div>
@@ -28,8 +28,8 @@
                       {{ error|escape }}
                   </div>
                 {% endfor %}
-                
-                <form method="post">         
+         
+                    <form method="post">
                 
                     {% csrf_token %}
 
@@ -48,9 +48,9 @@
                         </div>
                     {% endfor %}
 
-                    <div class="col-md-6 offset-md-4">              
+                    <div class="col-md-6 offset-md-4">     
                             <button type="submit" class="btn btn-primary">
-                                {% if request.path == '/new_post/'  %}
+                                {% if request.path == '/new/'  %}
                                     Создать запись
                                 {% else %}
                                     Редактировать запись
