@@ -2,8 +2,11 @@ from django.contrib import admin
 
 from .models import Group, Post
 
+
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'limited_text', 'pub_date', 'author', 'group', 'text')
+    list_display = (
+        'pk', 'limited_text', 'pub_date', 'author', 'group', 'text'
+    )
     search_fields = ('text',)
     list_filter = ('pub_date',)
     empty_value_display = '-пусто-'
