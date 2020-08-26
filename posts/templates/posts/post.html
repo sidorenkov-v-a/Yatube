@@ -1,14 +1,14 @@
 {% extends "include/base.html" %}
 {% block title %}Запись пользователя {{ author.username }}{% endblock %}
 {% block content %}
-<main role="main" class="container">
-    <div class="row">
-        {% include 'posts/author_info.html' %}
+    <main role="main" class="container">
+        <div class="row">
+            {% include 'posts/author_info.html' %}
 
-        <div class="col-md-9">
-            {% include 'posts/post_info.html' %}
+            <div class="col-md-9">
+                {% include 'posts/post_info.html' %}
+            </div>
+
         </div>
-        
-    </div>
-</main>
+    </main>
 {% endblock %}

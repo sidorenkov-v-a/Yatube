@@ -7,10 +7,10 @@ SECRET_KEY = 'exe)+13iml&xcb(4-z_^gb$-5=_opaj5ayu_a31ys*voc(^y!#'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-        "localhost",
-        "127.0.0.1",
-        "[::1]",
-        "testserver",
+    "localhost",
+    "127.0.0.1",
+    "[::1]",
+    "testserver",
 ]
 
 INSTALLED_APPS = [
@@ -96,6 +96,7 @@ LOGIN_URL = '/auth/login/'
 LOGIN_REDIRECT_URL = 'index'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
+
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')  # noqa
 
 SITE_ID = 1
