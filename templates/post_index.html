@@ -1,0 +1,25 @@
+<h3>
+    Автор: <a href="{% url 'profile' username=post.author.username %}">{{ post.author.get_full_name }}</a>, Дата
+    публикации: {{ post.pub_date|date:"d M Y" }}
+</h3>
+
+{% if 'group' not in request.path %}
+    {% if post.group %}
+        <h5>
+            Группа: <a href="{% url 'group' slug=post.group.slug %}">{{ post.group }}</a>
+        </h5>
+    {% endif %}
+{% endif %}
+
+
+
+<!-- Загрузка картинки -->
+{% load thumbnail %}
+{% thumbnail post.image "960x339" crop="center" upscale=True as im %}
+    <img class="card-img" src="{{ im.url }}">
+{% endthumbnail %}
+
+<!-- Текст поста -->
+<p>{{ post.text|linebreaksbr }}</p>
+{% if not forloop.last %}
+    <hr>{% endif %}

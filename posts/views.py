@@ -53,7 +53,7 @@ def post_edit(request, username, post_id):
     if request.user != post.author:
         return redirect('post', username=username, post_id=post_id)
 
-    form = PostForm(request.POST or None, instance=post)
+    form = PostForm(request.POST or None, files=request.FILES or None, instance=post)
     if request.method == 'POST':
         if form.is_valid():
             form.save()
@@ -83,3 +83,16 @@ def post_view(request, username, post_id):
         request, 'posts/post.html',
         {'author': post.author, 'post': post}
     )
+
+
+def page_not_found(request, exception):  # noqa
+    return render(
+        request,
+        "misc/404.html",
+        {"path": request.path},
+        status=404
+    )
+
+
+def server_error(request):
+    return render(request, "misc/500.html", status=500)

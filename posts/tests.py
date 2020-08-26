@@ -4,6 +4,8 @@ from django.urls import reverse
 
 from posts.models import Group, Post
 
+import os
+
 User = get_user_model()
 
 
@@ -196,3 +198,6 @@ class PostsTest(TestCase):
         self.check_page_contains_post(profile_url, edited_post)
         self.check_page_contains_post(post_url, edited_post)
         self.check_page_contains_post(group_url, edited_post)
+
+    def test_pages_contain_image(self):
+        self.assertTrue(os.path.exists('media/test.jpg'), msg='Test image does not exist')
