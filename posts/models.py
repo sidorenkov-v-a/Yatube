@@ -23,7 +23,8 @@ class Group(models.Model):
 
 class Post(models.Model):
     text = models.TextField(
-        'Полный текст'
+        'Текст записи',
+        help_text='Обязательное поле'
     )
     pub_date = models.DateTimeField(
         'Дата публикации',
@@ -41,20 +42,21 @@ class Post(models.Model):
         blank=True,
         null=True,
         related_name='posts',
-        verbose_name='Группа'
+        verbose_name='Группа',
+        help_text='Не обязательное поле'
     )
-
-    def limited_text(self, max_len=100):
-        if len(self.text) > max_len:
-            return self.text[:max_len] + "..."
-        else:
-            return self.text
-
-    limited_text.short_description = 'Описание'
 
     class Meta:
         ordering = ('-pub_date',)
 
     def __str__(self):
         limited_text = self.limited_text()
-        return f"{self.author} | {limited_text}"
+        return f'{self.author} | {limited_text}'
+
+    def limited_text(self, max_len=100):
+        if len(self.text) > max_len:
+            return self.text[:max_len] + '...'
+        else:
+            return self.text
+
+    limited_text.short_description = 'Описание'

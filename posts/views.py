@@ -1,10 +1,12 @@
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
-from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import PostForm
 from .models import Group, Post
+
+User = get_user_model()
 
 
 def index(request):
@@ -36,20 +38,31 @@ def group_posts(request, slug):
 
 @login_required
 def new_post(request):
-    if request.method == "POST":
-        form = PostForm(request.POST)
+    form = PostForm(request.POST or None)
+    if request.method == 'POST':
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.save()
             return redirect('index')
-    else:
-        form = PostForm()
-    return render(request, 'new_post.html', {'form': form})
+    return render(request, 'posts/new_post.html', {'form': form})
+
+
+def post_edit(request, username, post_id):
+    post = get_object_or_404(Post, author__username=username, pk=post_id)
+    if request.user != post.author:
+        return redirect('post', username=username, post_id=post_id)
+
+    form = PostForm(request.POST or None, instance=post)
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            return redirect('post', username=username, post_id=post_id)
+
+    return render(request, 'posts/new_post.html', {'form': form, 'post': post})
 
 
 def profile(request, username):
-    User = get_user_model()
     author = get_object_or_404(User, username=username)
 
     post_list = author.posts.all()
@@ -59,38 +72,14 @@ def profile(request, username):
     page = paginator.get_page(page_number)
     return render(
         request,
-        'profile.html',
+        'posts/profile.html',
         {'author': author, 'page': page, 'paginator': paginator}
     )
 
 
 def post_view(request, username, post_id):
-    User = get_user_model()
-    author = get_object_or_404(User, username=username)
-
-    post = get_object_or_404(Post, author=author, id=post_id)
-
-    return render(request, 'post.html', {'author': author, 'post': post})
-
-
-def post_edit(request, username, post_id):
-    if request.user.username != username:
-        return redirect(f'/{username}/{post_id}')
-
-    User = get_user_model()
-    user = User.objects.get(username=username)
-    post = Post.objects.get(author=user, id=post_id)
-
-    if request.method == "POST":
-        form = PostForm(request.POST)
-        if form.is_valid():
-            edited_post = form.save(commit=False)
-            edited_post.author = post.author
-            edited_post.id = post.id
-            edited_post.pub_date = post.pub_date
-            edited_post.save()
-            return redirect(f'/{username}/{post_id}')
-    else:
-        form = PostForm(instance=post)
-
-    return render(request, 'new_post.html', {'form': form, 'post': post})
+    post = get_object_or_404(Post, author__username=username, pk=post_id)
+    return render(
+        request, 'posts/post.html',
+        {'author': post.author, 'post': post}
+    )
