@@ -47,6 +47,15 @@ class Post(models.Model):
     )
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
 
+    # comment = models.ForeignKey(
+    #     Comment,
+    #     on_delete=models.SET_NULL,
+    #     blank=True,
+    #     null=True,
+    #     related_name='posts',
+    #     verbose_name='Комментарий'
+    # )
+
     class Meta:
         ordering = ('-pub_date',)
 
@@ -61,3 +70,28 @@ class Post(models.Model):
             return self.text
 
     limited_text.short_description = 'Описание'
+
+
+class Comment(models.Model):
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='Комментарий',
+        null=True
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='Автор комментария',
+        null=True
+
+    )
+    text = models.TextField(
+        'Текст комментария',
+    )
+    created = models.DateTimeField(
+        'Дата комментирования',
+        auto_now_add=True
+    )

@@ -18,4 +18,7 @@ urlpatterns = [
         views.post_edit,
         name='post_edit'
     ),
+    # Комментирование записи
+    path("<username>/<int:post_id>/comment", views.add_comment,
+         name="add_comment"),
 ]
