@@ -3,8 +3,11 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from posts.models import Group, Post
+from django.core.files.uploadedfile import SimpleUploadedFile
 
-import os
+from PIL import Image
+
+import io
 
 User = get_user_model()
 
@@ -23,6 +26,16 @@ class PostsTest(TestCase):
             description='test'
         )
         self.default_text = 'test_text'
+
+        img = Image.new('1', (1, 1))
+        image_io = io.BytesIO()
+        img.save(image_io, 'JPEG')
+        image_io.seek(0)
+        img = image_io.read()
+
+        self.default_image = SimpleUploadedFile(name='test_image.jpeg',
+                                                content=img,
+                                                content_type='image/jpeg')
 
     def get_context(self, response, key):
         self.assertTrue(
@@ -45,23 +58,31 @@ class PostsTest(TestCase):
         return post_objects[0]
 
     def create_new_post(self, author=None, text=None,
-                        group=None, commit=False):
+                        group=None, image=None, commit=False):
         if author is None:
             author = self.user
         if text is None:
             text = self.default_text
         if group is None:
             group = self.default_group
+        if image is None:
+            image = self.default_image
 
         if commit:
-            return Post.objects.create(author=author, text=text, group=group)
+            return Post.objects.create(
+                author=author,
+                text=text,
+                group=group,
+                image=image
+            )
         else:
-            return Post(author=author, text=text, group=group)
+            return Post(author=author, text=text, group=group, image=image)
 
     def publish_new_post(self, post):
         response = self.client.post(
             reverse('new_post'),
-            {'author': post.author, 'text': post.text, 'group': post.group.pk},
+            {'author': post.author, 'text': post.text, 'group': post.group.pk,
+             'image': post.image},
             follow=True
         )
         self.assertEqual(
@@ -142,16 +163,19 @@ class PostsTest(TestCase):
 
         post = self.create_new_post(commit=True)
 
-        index_url = reverse('index')
-        profile_url = reverse(
-            'profile', kwargs={'username': self.user.username})
-        post_url = reverse(
-            'post',
-            kwargs={'username': self.user.username, 'post_id': post.id})
+        urls = [
+            reverse('index'),
+            reverse(
+                'profile', kwargs={'username': self.user.username}
+            ),
+            reverse(
+                'post',
+                kwargs={'username': self.user.username, 'post_id': post.id}
+            ),
+        ]
 
-        self.check_page_contains_post(index_url, post)
-        self.check_page_contains_post(profile_url, post)
-        self.check_page_contains_post(post_url, post)
+        for url in urls:
+            self.check_page_contains_post(url, post)
 
     def test_authorized_edit(self):
 
@@ -164,24 +188,24 @@ class PostsTest(TestCase):
             description='edited_test'
         )
 
-        index_url = reverse('index')
-
-        profile_url = reverse(
-            'profile', kwargs={'username': self.user.username})
+        urls = [
+            reverse('index'),
+            reverse(
+                'profile', kwargs={'username': self.user.username}
+            ),
+            reverse(
+                'post',
+                kwargs={'username': self.user.username, 'post_id': post.id}
+            ),
+            reverse(
+                'group',
+                kwargs={'slug': edited_group.slug}
+            ),
+        ]
 
         post_edit_url = reverse(
             'post_edit',
             kwargs={'username': self.user.username, 'post_id': post.id}
-        )
-
-        post_url = reverse(
-            'post',
-            kwargs={'username': self.user.username, 'post_id': post.id}
-        )
-
-        group_url = reverse(
-            'group',
-            kwargs={'slug': edited_group.slug}
         )
 
         self.client.post(
@@ -194,10 +218,38 @@ class PostsTest(TestCase):
             text=edited_text, group=edited_group.pk)
         self.assertNotEqual(edited_post, None)
 
-        self.check_page_contains_post(index_url, edited_post)
-        self.check_page_contains_post(profile_url, edited_post)
-        self.check_page_contains_post(post_url, edited_post)
-        self.check_page_contains_post(group_url, edited_post)
+        for url in urls:
+            self.check_page_contains_post(url, edited_post)
 
     def test_pages_contain_image(self):
-        self.assertTrue(os.path.exists('media/test.jpg'), msg='Test image does not exist')
+        post = self.create_new_post(commit=True)
+        urls = [
+            reverse('index'),
+            reverse(
+                'profile', kwargs={'username': self.user.username}
+            ),
+            reverse(
+                'post',
+                kwargs={'username': self.user.username, 'post_id': post.id}
+            ),
+            reverse(
+                'group',
+                kwargs={'slug': self.default_group.slug}
+            ),
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertContains(response, '<img')
+
+    def test_not_image_error(self):
+        not_image = SimpleUploadedFile(
+            name='test_not_image.txt',
+            content=b'test_text'
+        )
+        post = self.create_new_post(image=not_image)
+        response = self.publish_new_post(post)
+        self.assertFormError(response, 'form', 'image',
+                             errors='Загрузите правильное изображение. '
+                                    'Файл, который вы загрузили, поврежден '
+                                    'или не является изображением.')

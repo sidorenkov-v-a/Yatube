@@ -38,7 +38,7 @@ def group_posts(request, slug):
 
 @login_required
 def new_post(request):
-    form = PostForm(request.POST or None)
+    form = PostForm(request.POST or None, files=request.FILES or None)
     if request.method == 'POST':
         if form.is_valid():
             post = form.save(commit=False)
@@ -53,7 +53,8 @@ def post_edit(request, username, post_id):
     if request.user != post.author:
         return redirect('post', username=username, post_id=post_id)
 
-    form = PostForm(request.POST or None, files=request.FILES or None, instance=post)
+    form = PostForm(request.POST or None, files=request.FILES or None,
+                    instance=post)
     if request.method == 'POST':
         if form.is_valid():
             form.save()
