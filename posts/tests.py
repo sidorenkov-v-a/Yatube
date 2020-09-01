@@ -9,6 +9,8 @@ from PIL import Image
 
 import io
 
+from django.core.cache import cache
+
 User = get_user_model()
 
 
@@ -253,3 +255,27 @@ class PostsTest(TestCase):
                              errors='Загрузите правильное изображение. '
                                     'Файл, который вы загрузили, поврежден '
                                     'или не является изображением.')
+
+    def test_cached_index_page(self):
+
+        cache.clear()
+
+        def create_post_and_check(text, should_exist):
+            self.create_new_post(text=text, commit=True)
+            response = self.client.get(reverse('index'))
+            if should_exist:
+                self.assertContains(response, text)
+            else:
+                self.assertNotContains(response, text)
+
+        create_post_and_check('test_text_1', True)
+        create_post_and_check('test_text_2', False)
+
+        cache.clear()
+
+        create_post_and_check('test_text_1', True)
+        create_post_and_check('test_text_2', True)
+
+
+
+

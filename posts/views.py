@@ -99,6 +99,7 @@ def add_comment(request, username, post_id):
         return redirect('post', username=username, post_id=post_id)
     return render(request, 'posts/comments.html', {'form': form, 'post': post})
 
+
 def page_not_found(request, exception):  # noqa
     return render(
         request,
