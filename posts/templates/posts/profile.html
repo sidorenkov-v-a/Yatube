@@ -8,7 +8,7 @@
             <div class="col-md-9">
                 <!-- Остальные посты -->
                 {% for post in page %}
-                    {% include 'posts/post_info.html' with comment_button=True %}
+                    {% include 'posts/post_item.html' %}
                 {% endfor %}
 
                 {% if page.has_other_pages %}

@@ -47,15 +47,6 @@ class Post(models.Model):
     )
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
 
-    # comment = models.ForeignKey(
-    #     Comment,
-    #     on_delete=models.SET_NULL,
-    #     blank=True,
-    #     null=True,
-    #     related_name='posts',
-    #     verbose_name='Комментарий'
-    # )
-
     class Meta:
         ordering = ('-pub_date',)
 
