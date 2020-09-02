@@ -33,5 +33,5 @@
             {{ item.text }}
         </div>
     </div>
-
+    {% if not forloop.last %}<hr>{% endif %}
 {% endfor %}
