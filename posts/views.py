@@ -72,10 +72,10 @@ def profile(request, username):
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
 
-    following = True
-    if Follow.objects.filter(user=request.user,
-                          author__username=username).first() is None:
-        following = False
+    count = Follow.objects.filter(user=request.user, author=author).count()
+    following = False
+    if count:
+        following = True
 
     return render(
         request,
@@ -123,7 +123,18 @@ def server_error(request):
 
 @login_required
 def follow_index(request):
-    return render(request, 'posts/follow.html')
+    user = request.user
+    post_list = Post.objects.filter(author__following__user=request.user)
+    paginator = Paginator(post_list, 10)
+
+    page_number = request.GET.get('page')
+    page = paginator.get_page(page_number)
+    return render(
+        request,
+        'posts/follow.html',
+        {'page': page, 'paginator': paginator}
+    )
+    # return render(request, 'posts/follow.html')
 
 
 @login_required
