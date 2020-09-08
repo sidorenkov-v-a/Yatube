@@ -3,7 +3,7 @@
 {% block content %}
     <main role="main" class="container">
         <div class="row">
-            {% include 'posts/author_info.html' %}
+            {% include 'posts/author_info.html' with following=following %}
 
             <div class="col-md-9">
                 <!-- Остальные посты -->
@@ -16,5 +16,6 @@
                 {% endif %}
             </div>
         </div>
+
     </main>
 {% endblock %}

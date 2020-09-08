@@ -3,7 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import PostForm, CommentForm
-from .models import Group, Post
+from .models import Group, Post, Follow
+from django.http import HttpResponse
 
 User = get_user_model()
 
@@ -70,10 +71,17 @@ def profile(request, username):
 
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
+
+    following = True
+    if Follow.objects.filter(user=request.user,
+                          author__username=username).first() is None:
+        following = False
+
     return render(
         request,
         'posts/profile.html',
-        {'author': author, 'page': page, 'paginator': paginator}
+        {'author': author, 'page': page, 'paginator': paginator,
+         'following': following}
     )
 
 
@@ -103,11 +111,32 @@ def add_comment(request, username, post_id):
 def page_not_found(request, exception):  # noqa
     return render(
         request,
-        "misc/404.html",
-        {"path": request.path},
+        'misc/404.html',
+        {'path': request.path},
         status=404
     )
 
 
 def server_error(request):
-    return render(request, "misc/500.html", status=500)
+    return render(request, 'misc/500.html', status=500)
+
+
+@login_required
+def follow_index(request):
+    return render(request, 'posts/follow.html')
+
+
+@login_required
+def profile_follow(request, username):
+    user = request.user
+    author = get_object_or_404(User, username=username)
+    Follow.objects.get_or_create(user=user, author=author)
+    return redirect('profile', username)
+
+
+@login_required
+def profile_unfollow(request, username):
+    user = request.user
+    author = get_object_or_404(User, username=username)
+    Follow.objects.filter(user=user, author=author).delete()
+    return redirect('profile', username)
