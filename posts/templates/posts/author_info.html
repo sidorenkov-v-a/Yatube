@@ -24,7 +24,7 @@
                 </div>
             </li>
         </ul>
-        {% if author != user %}
+        {% if author != user and user.is_authenticated %}
         <li class="list-group-item">
             {% if following %}
                 <a class="btn btn-lg btn-light"

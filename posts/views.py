@@ -73,10 +73,11 @@ def profile(request, username):
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
 
-    count = Follow.objects.filter(user=request.user, author=author).count()
-    following = False
-    if count:
-        following = True
+    user = request.user
+    if user.is_authenticated:
+        following = Follow.objects.filter(user=user, author=author).exists()
+    else:
+        following = False
 
     return render(
         request,
@@ -140,7 +141,8 @@ def follow_index(request):
 def profile_follow(request, username):
     user = request.user
     author = get_object_or_404(User, username=username)
-    Follow.objects.get_or_create(user=user, author=author)
+    if user != author:
+        Follow.objects.get_or_create(user=user, author=author)
     return redirect('profile', username)
 
 
