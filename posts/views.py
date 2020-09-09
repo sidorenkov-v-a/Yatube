@@ -4,11 +4,12 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import PostForm, CommentForm
 from .models import Group, Post, Follow
-from django.http import HttpResponse
+from django.views.decorators.cache import cache_page
 
 User = get_user_model()
 
 
+@cache_page(20)
 def index(request):
     post_list = Post.objects.all()
     paginator = Paginator(post_list, 10)
@@ -123,7 +124,6 @@ def server_error(request):
 
 @login_required
 def follow_index(request):
-    user = request.user
     post_list = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(post_list, 10)
 
@@ -134,7 +134,6 @@ def follow_index(request):
         'posts/follow.html',
         {'page': page, 'paginator': paginator}
     )
-    # return render(request, 'posts/follow.html')
 
 
 @login_required

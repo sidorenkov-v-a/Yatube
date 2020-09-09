@@ -165,6 +165,8 @@ class PostsTest(TestCase):
 
         post = self.create_new_post(commit=True)
 
+        cache.clear()
+
         urls = [
             reverse('index'),
             reverse(

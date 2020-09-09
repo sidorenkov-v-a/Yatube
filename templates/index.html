@@ -1,12 +1,9 @@
 {% extends "include/base.html" %}
 {% block title %}Последние обновления{% endblock %}
 {% block header %}Последние обновления на сайте{% endblock %}
-{% load cache %}
 
 {% block content %}
     {% include "menu.html" with index=True %}
-
-    {% cache 20 index_page %}
 
         {% for post in page %}
             {% include "posts/post_item.html" with post=post %}
@@ -16,5 +13,4 @@
             {% include "include/paginator.html" with items=page paginator=paginator %}
         {% endif %}
 
-    {% endcache %}
 {% endblock %}
