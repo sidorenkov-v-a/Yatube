@@ -1,15 +1,13 @@
-from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
-from django.urls import reverse
-
-from posts.models import Group, Post
-from django.core.files.uploadedfile import SimpleUploadedFile
-
-from PIL import Image
-
 import io
 
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase
+from django.urls import reverse
+from PIL import Image
+
+from posts.models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -39,6 +37,9 @@ class PostsTest(TestCase):
                                                 content=img,
                                                 content_type='image/jpeg')
 
+    def tearDown(self):
+        cache.clear()
+
     def get_context(self, response, key):
         self.assertTrue(
             key in response.context,
@@ -56,6 +57,8 @@ class PostsTest(TestCase):
     def get_post_from_paginator(self, response):
         post_objects = self.get_context(response, 'page').object_list
         paginator = self.get_context(response, 'paginator')
+        if paginator.count == 0:
+            return None
         self.assertEqual(paginator.count, 1)
         return post_objects[0]
 
@@ -260,8 +263,6 @@ class PostsTest(TestCase):
 
     def test_cached_index_page(self):
 
-        cache.clear()
-
         def create_post_and_check(text, should_exist):
             self.create_new_post(text=text, commit=True)
             response = self.client.get(reverse('index'))
@@ -278,6 +279,73 @@ class PostsTest(TestCase):
         create_post_and_check('test_text_1', True)
         create_post_and_check('test_text_2', True)
 
+    def follow_to_user(self, username):
+        response = self.client.post(
+            reverse('profile_follow',
+                    kwargs={'username': username}),
+            follow=True)
+        self.assertEqual(response.status_code, 200)
 
+    def test_user_follow_unfollow(self):
+        author = User.objects.create_user(username='author')
 
+        def test_using_post_method():
+            self.follow_to_user(author.username)
+            self.assertEqual(self.user.follower.count(), 1)
 
+            response = self.client.post(
+                reverse('profile_unfollow',
+                        kwargs={'username': author.username}),
+                follow=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(self.user.follower.count(), 0)
+
+        # Для ревьюера. В чатике увидел подбные варианты,
+        # мне они не кажутся правильными, но я на всякий случай пока оставлю.
+        # После первого ревью все комменты почищу.
+        def test_using_database():
+            Follow.objects.create(user=self.user, author=author)
+            self.assertEqual(self.user.follower.count(), 1)
+
+            Follow.objects.filter(user=self.user, author=author).delete()
+            self.assertEqual(self.user.follower.count(), 0)
+
+        test_using_post_method()
+        # test_using_database()
+
+    def test_user_follow_index(self):
+        followed_user = User.objects.create_user(username='followed_user')
+        unfollowed_user = User.objects.create_user(username='unfollowed_user')
+        author = User.objects.create_user(username='author')
+
+        new_post = self.create_new_post(author=author, commit=True)
+
+        self.client.force_login(followed_user)
+        self.follow_to_user(author.username)
+
+        tested_post = self.get_post_from_page(reverse('follow_index'))
+        self.compare_posts(new_post, tested_post)
+
+        self.client.force_login(unfollowed_user)
+        tested_post = self.get_post_from_page(reverse('follow_index'))
+        self.assertEqual(tested_post, None)
+
+    def test_comment(self):
+        post = self.create_new_post(commit=True)
+
+        def add_comment():
+            response = self.client.post(
+                reverse('add_comment',
+                        kwargs={'username': self.user.username,
+                                'post_id': post.id}), {'text': 'comment_text'},
+                follow=True)
+            self.assertEqual(response.status_code, 200)
+            return response
+
+        add_comment()
+        self.assertEqual(post.comments.count(), 1)
+
+        self.client.logout()
+        post.comments.filter(text='comment_text').delete()
+        add_comment()
+        self.assertEqual(post.comments.count(), 0)
