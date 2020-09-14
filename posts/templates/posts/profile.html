@@ -3,12 +3,12 @@
 {% block content %}
     <main role="main" class="container">
         <div class="row">
-            {% include 'posts/author_info.html' with following=following %}
+            {% include 'posts/include/author_info.html' with following=following %}
 
             <div class="col-md-9">
                 <!-- Остальные посты -->
                 {% for post in page %}
-                    {% include 'posts/post_item.html' %}
+                    {% include 'posts/include/post_item.html' %}
                 {% endfor %}
 
                 {% if page.has_other_pages %}

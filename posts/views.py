@@ -12,7 +12,7 @@ User = get_user_model()
 
 @cache_page(20)
 def index(request):
-    post_list = Post.objects.all()
+    post_list = Post.objects.select_related('author', 'group').all()
     paginator = Paginator(post_list, 10)
 
     page_number = request.GET.get('page')
@@ -41,12 +41,11 @@ def group_posts(request, slug):
 @login_required
 def new_post(request):
     form = PostForm(request.POST or None, files=request.FILES or None)
-    if request.method == 'POST':
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect('index')
+    if form.is_valid():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        return redirect('index')
     return render(request, 'posts/new_post.html', {'form': form})
 
 
@@ -55,12 +54,15 @@ def post_edit(request, username, post_id):
     if request.user != post.author:
         return redirect('post', username=username, post_id=post_id)
 
-    form = PostForm(request.POST or None, files=request.FILES or None,
-                    instance=post)
-    if request.method == 'POST':
-        if form.is_valid():
-            form.save()
-            return redirect('post', username=username, post_id=post_id)
+    form = PostForm(
+        request.POST or None,
+        files=request.FILES or None,
+        instance=post
+    )
+
+    if form.is_valid():
+        form.save()
+        return redirect('post', username=username, post_id=post_id)
 
     return render(request, 'posts/new_post.html', {'form': form, 'post': post})
 
@@ -75,10 +77,9 @@ def profile(request, username):
     page = paginator.get_page(page_number)
 
     user = request.user
-    if user.is_authenticated:
-        following = Follow.objects.filter(user=user, author=author).exists()
-    else:
-        following = False
+
+    following = user.is_authenticated and \
+        Follow.objects.filter(user=user, author=author).exists()
 
     return render(
         request,
@@ -107,8 +108,7 @@ def add_comment(request, username, post_id):
         comment.author = request.user
         comment.post = post
         comment.save()
-        return redirect('post', username=username, post_id=post_id)
-    return render(request, 'posts/comments.html', {'form': form, 'post': post})
+    return redirect('post', username=username, post_id=post_id)
 
 
 def page_not_found(request, exception):  # noqa

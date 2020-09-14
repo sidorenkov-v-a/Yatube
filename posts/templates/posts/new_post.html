@@ -1,11 +1,7 @@
 {% extends "include/base.html" %}
 
 {% block title %}
-    {% if not post %}
-        Новая запись
-    {% else %}
-        Редактировать запись
-    {% endif %}
+    {{ post|yesno:"Редактировать запись,Новая запись" }}
 {% endblock %}
 
 {% block content %}
@@ -14,11 +10,11 @@
     <div class="row justify-content-center">
         <div class="col-md-8 p-5">
             <div class="card">
-                {% if not post %}
-                    <div class="card-header">Создайте новую запись</div>
-                {% else %}
-                    <div class="card-header">Отредактируйте свою запись</div>
-                {% endif %}
+
+                <div class="card-header">
+                    {{ post|yesno:"Отредактируйте свою запись,Создайте новую запись" }}
+                </div>
+
 
                 <div class="card-body">
 
@@ -52,11 +48,7 @@
 
                 <div class="col-md-6 offset-md-4">
                     <button type="submit" class="btn btn-primary">
-                        {% if not post %}
-                            Создать запись
-                        {% else %}
-                            Редактировать запись
-                        {% endif %}
+                        {{ post|yesno:"Редактировать запись,Создать запись" }}
                     </button>
                 </div>
                 </form>

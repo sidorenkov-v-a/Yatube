@@ -5,7 +5,7 @@
 {% block content %}
     <p>{{ group.description|linebreaksbr }}</p>
     {% for post in page %}
-        {% include 'posts/post_item.html' %}
+        {% include 'posts/include/post_item.html' %}
     {% endfor %}
 
     {% if page.has_other_pages %}

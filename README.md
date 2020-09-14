@@ -1,2 +1,1 @@
-# yatube
-Blogger's social network
+# hw05_final

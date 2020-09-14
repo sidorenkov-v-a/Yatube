@@ -1,19 +1,25 @@
 import io
+import shutil
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 
-from posts.models import Follow, Group, Post
+from posts.models import Comment, Follow, Group, Post
 
 User = get_user_model()
 
+TEST_DIR = 'test_data'
 
+
+@override_settings(MEDIA_ROOT=(TEST_DIR + '/media'))
 class PostsTest(TestCase):
+
     def setUp(self):
+
         self.client = Client()
         self.user = User.objects.create_user(
             username='test_user',
@@ -33,11 +39,11 @@ class PostsTest(TestCase):
         image_io.seek(0)
         img = image_io.read()
 
-        self.default_image = SimpleUploadedFile(name='test_image.jpeg',
-                                                content=img,
-                                                content_type='image/jpeg')
-
-    def tearDown(self):
+        self.default_image = SimpleUploadedFile(
+            name='test_image.jpeg',
+            content=img,
+            content_type='image/jpeg'
+        )
         cache.clear()
 
     def get_context(self, response, key):
@@ -182,7 +188,8 @@ class PostsTest(TestCase):
         ]
 
         for url in urls:
-            self.check_page_contains_post(url, post)
+            with self.subTest(url=url):
+                self.check_page_contains_post(url, post)
 
     def test_authorized_edit(self):
 
@@ -226,7 +233,8 @@ class PostsTest(TestCase):
         self.assertNotEqual(edited_post, None)
 
         for url in urls:
-            self.check_page_contains_post(url, edited_post)
+            with self.subTest(url=url):
+                self.check_page_contains_post(url, edited_post)
 
     def test_pages_contain_image(self):
         post = self.create_new_post(commit=True)
@@ -252,100 +260,162 @@ class PostsTest(TestCase):
     def test_not_image_error(self):
         not_image = SimpleUploadedFile(
             name='test_not_image.txt',
+            content_type='text/plain',
             content=b'test_text'
         )
         post = self.create_new_post(image=not_image)
         response = self.publish_new_post(post)
-        self.assertFormError(response, 'form', 'image',
-                             errors='Загрузите правильное изображение. '
-                                    'Файл, который вы загрузили, поврежден '
-                                    'или не является изображением.')
+        self.assertFormError(
+            response, 'form', 'image',
+            errors='Загрузите правильное изображение. '
+                   'Файл, который вы загрузили, поврежден '
+                   'или не является изображением.'
+        )
+
+    def test_404(self):
+        url = '/unknown_page/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_cached_index_page(self):
 
-        def create_post_and_check(text, should_exist):
-            self.create_new_post(text=text, commit=True)
-            response = self.client.get(reverse('index'))
-            if should_exist:
-                self.assertContains(response, text)
+        def create_and_get_response(no_cache=False):
+            self.create_new_post(text='test_text', commit=True)
+            if no_cache:
+                cache.clear()
+            return self.client.get(reverse('index'))
+
+        def compare_responses(no_cache):
+            response1 = create_and_get_response(no_cache)
+            response2 = create_and_get_response(no_cache)
+
+            if not no_cache:
+                self.assertEqual(response1.content, response2.content)
             else:
-                self.assertNotContains(response, text)
+                self.assertNotEqual(response1.content, response2.content)
 
-        create_post_and_check('test_text_1', True)
-        create_post_and_check('test_text_2', False)
+        compare_responses(no_cache=False)
+        compare_responses(no_cache=True)
 
-        cache.clear()
+    def follow_to_user(self, author, user=None, directly_db=None):
+        if user is None:
+            user = self.user
 
-        create_post_and_check('test_text_1', True)
-        create_post_and_check('test_text_2', True)
+        if directly_db:
+            Follow.objects.create(user=user, author=author)
+            return
 
-    def follow_to_user(self, username):
         response = self.client.post(
             reverse('profile_follow',
-                    kwargs={'username': username}),
+                    kwargs={'username': author.username}),
             follow=True)
         self.assertEqual(response.status_code, 200)
 
-    def test_user_follow_unfollow(self):
+        follow = Follow.objects.filter(
+            user=user,
+            author=author
+        ).first()
+        self.assertNotEqual(follow, None)
+
+    def unfollow_from_user(self, author, user=None):
+        response = self.client.post(
+            reverse('profile_unfollow',
+                    kwargs={'username': author.username}),
+            follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        follow = Follow.objects.filter(
+            user=user,
+            author=author
+        ).first()
+        self.assertEqual(follow, None)
+
+    def test_user_follow(self):
         author = User.objects.create_user(username='author')
 
-        def test_using_post_method():
-            self.follow_to_user(author.username)
-            self.assertEqual(self.user.follower.count(), 1)
+        self.follow_to_user(author)
+        self.assertEqual(Follow.objects.count(), 1)
+        self.assertEqual(self.user.follower.count(), 1)
+        self.assertEqual(self.user.following.count(), 0)
 
-            response = self.client.post(
-                reverse('profile_unfollow',
-                        kwargs={'username': author.username}),
-                follow=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(self.user.follower.count(), 0)
+    def test_user_unfollow(self):
+        author = User.objects.create_user(username='author')
+        self.follow_to_user(author=author, directly_db=True)
 
-        # Для ревьюера. В чатике увидел подбные варианты,
-        # мне они не кажутся правильными, но я на всякий случай пока оставлю.
-        # После первого ревью все комменты почищу.
-        def test_using_database():
-            Follow.objects.create(user=self.user, author=author)
-            self.assertEqual(self.user.follower.count(), 1)
-
-            Follow.objects.filter(user=self.user, author=author).delete()
-            self.assertEqual(self.user.follower.count(), 0)
-
-        test_using_post_method()
-        # test_using_database()
+        self.unfollow_from_user(author)
+        self.assertEqual(Follow.objects.count(), 0)
+        self.assertEqual(self.user.follower.count(), 0)
+        self.assertEqual(self.user.following.count(), 0)
 
     def test_user_follow_index(self):
         followed_user = User.objects.create_user(username='followed_user')
-        unfollowed_user = User.objects.create_user(username='unfollowed_user')
-        author = User.objects.create_user(username='author')
+        self.client.force_login(followed_user)
 
+        author = User.objects.create_user(username='author')
         new_post = self.create_new_post(author=author, commit=True)
 
-        self.client.force_login(followed_user)
-        self.follow_to_user(author.username)
+        self.follow_to_user(
+            user=followed_user, author=author, directly_db=True
+        )
 
         tested_post = self.get_post_from_page(reverse('follow_index'))
         self.compare_posts(new_post, tested_post)
 
+    def test_user_unfollow_index(self):
+        unfollowed_user = User.objects.create_user(username='unfollowed_user')
         self.client.force_login(unfollowed_user)
+
+        author = User.objects.create_user(username='author')
+        self.create_new_post(author=author, commit=True)
+
         tested_post = self.get_post_from_page(reverse('follow_index'))
         self.assertEqual(tested_post, None)
 
-    def test_comment(self):
+    def add_comment(self, post, text):
+        response = self.client.post(
+            reverse('add_comment',
+                    kwargs={'username': self.user.username,
+                            'post_id': post.id}), {'text': text},
+            follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        return response
+
+    def get_comment(self, post, text):
+        return Comment.objects.filter(
+            post=post,
+            author=self.user,
+            text=text
+        ).first()
+
+    def test_authorized_comment(self):
         post = self.create_new_post(commit=True)
-
-        def add_comment():
-            response = self.client.post(
-                reverse('add_comment',
-                        kwargs={'username': self.user.username,
-                                'post_id': post.id}), {'text': 'comment_text'},
-                follow=True)
-            self.assertEqual(response.status_code, 200)
-            return response
-
-        add_comment()
+        text = 'comment_text'
+        self.add_comment(post, text)
+        self.assertEqual(Comment.objects.count(), 1)
         self.assertEqual(post.comments.count(), 1)
 
+        comment = self.get_comment(post, text)
+
+        self.assertNotEqual(comment, None)
+
+    def test_unauthorized_comment(self):
         self.client.logout()
-        post.comments.filter(text='comment_text').delete()
-        add_comment()
+
+        post = self.create_new_post(commit=True)
+        text = 'comment_text'
+        self.add_comment(post, text)
+        self.assertEqual(Comment.objects.count(), 0)
         self.assertEqual(post.comments.count(), 0)
+
+        comment = self.get_comment(post, text)
+
+        self.assertEqual(comment, None)
+
+
+def tearDownModule():
+    print('\nDeleting temporary files...\n')
+    try:
+        shutil.rmtree(TEST_DIR)
+    except OSError:
+        pass

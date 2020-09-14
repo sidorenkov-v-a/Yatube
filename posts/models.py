@@ -45,7 +45,12 @@ class Post(models.Model):
         verbose_name='Группа',
         help_text='Не обязательное поле'
     )
-    image = models.ImageField(upload_to='posts/', blank=True, null=True)
+    image = models.ImageField(
+        upload_to='posts/',
+        blank=True,
+        null=True,
+        verbose_name='Фотография'
+    )
 
     class Meta:
         ordering = ('-pub_date',)
@@ -87,6 +92,20 @@ class Comment(models.Model):
         auto_now_add=True
     )
 
+    class Meta:
+        ordering = ('-created',)
+
+    def __str__(self):
+        return self.limited_text()
+
+    def limited_text(self, max_len=100):
+        if len(self.text) > max_len:
+            return self.text[:max_len] + '...'
+        else:
+            return self.text
+
+    limited_text.short_description = 'Краткое описание'
+
 
 class Follow(models.Model):
     user = models.ForeignKey(
@@ -99,3 +118,6 @@ class Follow(models.Model):
         on_delete=models.CASCADE,
         related_name='following'
     )
+
+    class Meta:
+        unique_together = ['user', 'author']
