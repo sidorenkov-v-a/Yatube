@@ -7,11 +7,12 @@ SECRET_KEY = 'exe)+13iml&xcb(4-z_^gb$-5=_opaj5ayu_a31ys*voc(^y!#'
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    "*",
     'localhost',
     '127.0.0.1',
     '[::1]',
-    'testserver',
+    '84.201.143.164',
+    'www.vtube.ml',
+    'vtube.ml'
 ]
 
 INSTALLED_APPS = [
@@ -63,11 +64,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'yatube.wsgi.application'
 
+import environ
+env = environ.Env()
+environ.Env.read_env()
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    'default': env.db(),
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -115,3 +117,11 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn="https://f88dfc871afd40919f37bfc62c54c8fa@o502702.ingest.sentry.io/5585328",
+    integrations=[DjangoIntegration()],
+)
