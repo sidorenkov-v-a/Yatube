@@ -10,6 +10,6 @@
 ### Стек технологий:
 - Python
 - Django framework
-- Pytest
+- Unittest
 - Gunicorn
 - Ngnix
