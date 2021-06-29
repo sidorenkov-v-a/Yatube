@@ -37,6 +37,7 @@ python manage.py loaddata dump.json
 ## Стек технологий:   
 - Django framework 3.0.5
 - Django rest framework 3.11.0
+- Unittest
 - Pillow
 - PostgreSQL 12.4
 - Gunicorn 20.04
