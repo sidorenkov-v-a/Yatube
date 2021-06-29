@@ -1,0 +1,34 @@
+version: '3.7'
+
+volumes:
+  postgres_data:
+
+services:
+  nginx:
+    image: nginx:1.19.0-alpine
+    restart: always
+    ports:
+      - '80:8080'
+    volumes:
+      - ./static:/code/static
+      - ./media:/code/media
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    depends_on:
+      - web
+  db:
+    image: postgres:12.4
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+  web:
+    build: .
+    restart: always
+    volumes:
+      - ./static:/code/static
+      - ./media:/code/media
+      - .env:/code/.env
+    depends_on:
+      - db
+    env_file:
+      - ./.env

@@ -1,19 +1,17 @@
 import os
+import environ
+
+env = environ.Env()
+environ.Env.read_env(env_file='.env')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SECRET_KEY = 'exe)+13iml&xcb(4-z_^gb$-5=_opaj5ayu_a31ys*voc(^y!#'
+SECRET_KEY = env('SECRET_KEY')
 
-DEBUG = False
+DEBUG = env.bool('DEBUG')
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '[::1]',
-    '84.201.143.164',
-    'www.vtube.ml',
-    'vtube.ml'
-]
+ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS += env.list('ALLOWED_HOSTS', default=[])
 
 INSTALLED_APPS = [
     'posts',
@@ -64,13 +62,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'yatube.wsgi.application'
 
-import environ
-env = environ.Env()
-environ.Env.read_env()
-
 DATABASES = {
-    'default': env.db(),
+    'develop': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'db.sqlite3',
+    },
+    'production': {
+        'ENGINE': env('DB_ENGINE'),
+        'NAME': env('DB_NAME'),
+        'USER': env('POSTGRES_USER'),
+        'PASSWORD': env('POSTGRES_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
+    }
 }
+
+DEFAULT_AUTO_FIELD='django.db.models.AutoField'
+
+DATABASES['default'] = DATABASES['develop' if DEBUG else 'production']
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -117,11 +126,3 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
-
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-
-sentry_sdk.init(
-    dsn="https://f88dfc871afd40919f37bfc62c54c8fa@o502702.ingest.sentry.io/5585328",
-    integrations=[DjangoIntegration()],
-)
